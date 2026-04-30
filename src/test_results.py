@@ -7,9 +7,13 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+
+# 1. Konfiguracja urządzenia
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Używane urządzenie: {device}")
 
+
+# 2. Definicja Architektury (musi być identyczna jak przy uczeniu)
 class SimpleModel(nn.Module):
     def __init__(self, liczba_budynkow=10):
         super(SimpleModel, self).__init__()
@@ -18,7 +22,7 @@ class SimpleModel(nn.Module):
         self.conv3 = nn.Conv2d(64, 128, 3, padding=1)
         self.pool = nn.MaxPool2d(2, 2)
         self.dropout = nn.Dropout(0.5)
-        self.fc1 = nn.Linear(128 * 32 * 32, 512)
+        self.fc1 = nn.Linear(128 * 28 * 28, 512)
         self.fc2 = nn.Linear(512, liczba_budynkow)
 
     def forward(self, x):
@@ -31,16 +35,21 @@ class SimpleModel(nn.Module):
         x = self.fc2(x)
         return x
 
-Model_src = 'stare_modele/model_pwr.pth'
-val_dir = 'val'
+
+# 3. Parametry i ścieżki
+Model_src = 'src/model_pwr_13_04_2026.pth'
+val_dir = 'val'  # Folder z danymi testowymi/walidacyjnymi
 batch_size = 16
 
+# 4. Transformacje dla danych testowych (bez losowości, tylko przygotowanie)
 test_transforms = transforms.Compose([
-    transforms.Resize(256),
-    transforms.CenterCrop(256),
+    transforms.Resize(224),
+    transforms.CenterCrop(224),
     transforms.ToTensor(),
     transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 ])
+
+# 5. Ładowanie danych i modelu
 if not os.path.exists(val_dir):
     print(f"BŁĄD: Nie znaleziono folderu {val_dir}!")
     exit()
