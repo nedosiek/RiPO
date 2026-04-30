@@ -1,0 +1,18 @@
+# srodowisko wirtualne
+venv/
+
+# pliki konfiguracyjne
+.idea/
+__pycache__/
+
+#stare modele
+*.pth
+
+#zdjecia i filmy
+*.jpg
+*.jpeg
+*.png
+*.mov
+*.heic
+*.mp4
+*.zip

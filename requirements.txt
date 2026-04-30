@@ -1,0 +1,7 @@
+torch
+torchvision
+matplotlib
+opencv-python
+numpy
+fastapi
+uvicorn
