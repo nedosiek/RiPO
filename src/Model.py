@@ -87,7 +87,8 @@ if __name__ == '__main__':
         print("Nie znaleziono pliku wag! Zaczynam naukę od zera.")
 
     model.to(device)
-    criterion = nn.CrossEntropyLoss() # TU ZMIENIONE - DO POPRAWY
+    weights = torch.tensor([1.0, 2.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 3.0]).to(device)
+    criterion = nn.CrossEntropyLoss(weight=weights) # TU ZMIENIONE - DO POPRAWY
     optimizer = optim.Adam(model.parameters(), lr=0.0001)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.5, patience=5)
 
