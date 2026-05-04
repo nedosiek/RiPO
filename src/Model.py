@@ -42,8 +42,8 @@ val_dir = 'val'
 train_data = datasets.ImageFolder(train_dir, transform=data_transforms)
 val_data = datasets.ImageFolder(val_dir, transform=val_transforms)
 
-train_loader = DataLoader(train_data, batch_size=32, shuffle=True, pin_memory=True)
-val_loader = DataLoader(val_data, batch_size=32, shuffle=False, pin_memory=True)
+train_loader = DataLoader(train_data, batch_size=128, shuffle=True, pin_memory=True, num_workers=4)
+val_loader = DataLoader(val_data, batch_size=128, shuffle=False, pin_memory=True, num_workers=4)
 
 class SimpleModel(nn.Module):
     def __init__(self):
@@ -77,61 +77,62 @@ class SimpleModel(nn.Module):
         x = self.fc2(x)
         return x
 
+if __name__ == '__main__':
 
-model = SimpleModel()
-if os.path.exists(Model_src):
-    print(f"Wczytuję wagi z {Model_src}...")
-    model.load_state_dict(torch.load(Model_src))
-else:
-    print("Nie znaleziono pliku wag! Zaczynam naukę od zera.")
+    model = SimpleModel()
+    if os.path.exists(Model_src):
+        print(f"Wczytuję wagi z {Model_src}...")
+        model.load_state_dict(torch.load(Model_src, weights_only=True))
+    else:
+        print("Nie znaleziono pliku wag! Zaczynam naukę od zera.")
 
-model.to(device)
-criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.0005)
-scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.5, patience=3)
+    model.to(device)
+    criterion = nn.CrossEntropyLoss() # TU ZMIENIONE - DO POPRAWY
+    optimizer = optim.Adam(model.parameters(), lr=0.0001)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.5, patience=5)
 
-num_epochs = 30
-best_accuracy = 0.0
-accuracy = 0.0
-for epoch in range(num_epochs):
-    # === TRENING ===
-    model.train()
-    running_loss = 0.0
+    num_epochs = 30
+    best_accuracy = 0.0
+    accuracy = 0.0
+    for epoch in range(num_epochs):
+        # === TRENING ===
+        model.train()
+        running_loss = 0.0
 
-    for images, labels in tqdm(train_loader, desc=f"Trenowanie epoki {epoch+1}"):
-        images = images.to(device)
-        labels = labels.to(device)
-
-        optimizer.zero_grad()
-        outputs = model(images)
-        loss = criterion(outputs, labels)
-        loss.backward()
-        optimizer.step()
-
-        running_loss += loss.item()
-
-    model.eval()
-    correct = 0
-    total = 0
-
-    with torch.no_grad():
-        for images, labels in val_loader:
+        for images, labels in tqdm(train_loader, desc=f"Trenowanie epoki {epoch+1}"):
             images = images.to(device)
             labels = labels.to(device)
 
+            optimizer.zero_grad()
             outputs = model(images)
-            _, predicted = torch.max(outputs.data, 1)
-            total += labels.size(0)
-            correct += (predicted == labels).sum().item()
-    accuracy = 100 * correct / total
-    if(accuracy > best_accuracy):
-        best_accuracy = accuracy
-        torch.save(model.state_dict(), 'model_pwr.pth')
-        print(f"Zapisano najlepszy model (Acc: {accuracy:.1f}%) Plik: model_pwr.pth")
-    scheduler.step(accuracy)
-    current_lr = optimizer.param_groups[0]['lr']
-    print(f"Aktualny LR: {current_lr}")
-    print(f"Epoka {epoch+1}/{num_epochs} | Loss: {running_loss/len(train_loader):.4f} | Accuracy: {accuracy:.1f}%")
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
 
-torch.save(model.state_dict(), 'model_pwr_final.pth')
-print(f"Zakończono naukę modelu! (Acc: {accuracy:.1f}%) Plik: model_pwr_final.pth")
+            running_loss += loss.item()
+
+        model.eval()
+        correct = 0
+        total = 0
+
+        with torch.no_grad():
+            for images, labels in val_loader:
+                images = images.to(device)
+                labels = labels.to(device)
+
+                outputs = model(images)
+                _, predicted = torch.max(outputs.data, 1)
+                total += labels.size(0)
+                correct += (predicted == labels).sum().item()
+        accuracy = 100 * correct / total
+        if(accuracy > best_accuracy):
+            best_accuracy = accuracy
+            torch.save(model.state_dict(), 'model_pwr.pth')
+            print(f"Zapisano najlepszy model (Acc: {accuracy:.1f}%) Plik: model_pwr.pth")
+        scheduler.step(accuracy)
+        current_lr = optimizer.param_groups[0]['lr']
+        print(f"Aktualny LR: {current_lr}")
+        print(f"Epoka {epoch+1}/{num_epochs} | Loss: {running_loss/len(train_loader):.4f} | Accuracy: {accuracy:.1f}%")
+
+    torch.save(model.state_dict(), 'model_pwr_final.pth')
+    print(f"Zakończono naukę modelu! (Acc: {accuracy:.1f}%) Plik: model_pwr_final.pth")
